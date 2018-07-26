@@ -1,10 +1,14 @@
 require("dotenv").config();
+var Twitter = require('twitter');
+var Spotify = require('node-spotify-api');
 
-var spotify = new Spotify(keys.spotify);
-var twitter = new Twitter(keys.twitter);
 var keys = require("./keys");
 var request = require("request");
 var fs = require('fs');
+
+var spotify = new Spotify(keys.spotify);
+var client = new Twitter(keys.twitter);
+
 // Store all of the arguments in an array
 var nodeArgv = process.argv;
 
@@ -37,10 +41,10 @@ function show() {
 
       if (nodeArgv.length < 1) {
 
-          option = "The Sign Ace of Base";
+        nodeArgv = "The Sign Ace of Base";
       };
 
-      spotify.search({ type: 'track', query: option }, function(err, data) {
+      spotify.search({ type: 'track', query: nodeArgv }, function(err, data) {
           if (err) {
               console.log('Error occurred: ' + err);
               return;
@@ -94,7 +98,7 @@ function show() {
 
       show();
 
-  } else if (input1 === "do-what-it-says") {
+  } else if (nodeArgv === "do-what-it-says") {
 
       log();
 
