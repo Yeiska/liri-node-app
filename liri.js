@@ -9,16 +9,10 @@ var request = require("request");
 var fs = require('fs');
 var inquirer = require("inquirer");
 
-
-
-
 // Store all of the arguments in an array
 var nodeArgv = process.argv[2];
-var input = process.argv[3];
 var tweetsArray = [];
-var song = [];
-//console.log(nodeArgv);
-
+var movie = [];
 
 var params = {
     screen_name: 'nodejs',
@@ -27,34 +21,46 @@ var params = {
 // on screen menu
 inquirer.prompt([
     {
-     type: "list",
-     message: "What is your command, Master?",
-     choices: ["List my Recent Tweets", "Spotify A Song", "Get movie details", "Do something else"],
-     name: "commands"
-   }
-])
-.then(function(inquirerResponse) {
-    switch(inquirerResponse.commands) {
-        case "List my Recent Tweets":
-            getRecentTweets();
-            break;
-        case "Spotify A Song":
-            getMediaDetails("song");
-            break;
-        case "Get movie details":
-            getMediaDetails("movie");
-            break;
-        case "Do something else":
-             doit()
-            //getTextFromRandom();
-            break;
-        default:
-            console.log("I don't know what you want from me.");
+        type: "list",
+        message: "What is your command, Master?",
+        choices: ["List my Recent Tweets", "Spotify A Song", "Get movie details", "Do what-it says"],
+        name: "commands"
     }
-});
+])
+    .then(function (inquirerResponse) {
+
+        switch (inquirerResponse.commands) {
+
+            case "List my Recent Tweets":
+            
+                getRecentTweets(nodeArgv);
+                break;
+
+            case "Spotify A Song":
+
+                getMediaDetails(nodeArgv);
+                break;
+
+            case "Get movie details":
+
+                getMedia(nodeArgv);
+                break;
+
+            case "Do what it says":
+
+                doit()
+                break;
+
+            default:
+
+                console.log("I don't know what you want from me.");
+        }
+    });
 
 function getRecentTweets(nodeArgv) {
+    
     if (nodeArgv === "my-tweets") {
+       
         var client = new Twitter({
             consumer_key: twitkeys.TWITTER_CONSUMER_KEY,
             consumer_secret: twitkeys.TWITTER_CONSUMER_SECRET,
@@ -66,65 +72,65 @@ function getRecentTweets(nodeArgv) {
             //console.log(error);
             if (!error) {
                 tweetsArray = tweets;
-                
-                for(i=0; i < tweetsArray.length; i++){
-						console.log("Created at: " + tweetsArray[i].created_at);
-						console.log("Text: " + tweetsArray[i].text);
-						console.log('--------------------------------------');
-					}
+
+                for (i = 0; i < tweetsArray.length; i++) {
+                    console.log("Created at: " + tweetsArray[i].created_at);
+                    console.log("Text: " + tweetsArray[i].text);
+                    console.log('--------------------------------------');
+                }
             } else {
                 console.log(error);
             };
         });
     }
+    log();
 }
 
-function getMediaDetails(input) {
-
+function getMediaDetails(song) {
+    
     var spotify = new Spotify(keys.spotify);
-    //console.log(song);
-    if (!input){
-        input = 'The Sign';
+    
+    if (!song) {
+        song = 'The Sign';
     }
 
-    spotify.search({ type: 'track', query: input }, function (err, data) {
-        if (err) {
-            console.log('Error occurred: ' + err);
+    spotify.search({ type: 'track', query: "\"" + song + "\"" }, function (err, data) {
+        if (!err) {
+            var songData = data.tracks.items;
+            for (var i = 0; i < 5; i++) {
+                if (songData[i] != undefined) {
+                    console.log("------Artists-----");
+                    console.log('');
+                    console.log('Spotify Song Information Results: ');
+                    console.log('--------------------------');
+                    console.log("Artist(s): " + songData[i].artists[0].name);
+                    console.log("Track Title: " + songData[i].name);
+                    console.log("Link to Song: " + songData[i].preview_url);
+                    console.log("Album Title: " + songData[i].album.name);
+                    console.log('--------------------------');
+                }
+            }
+        } else {
+            console.log("Error :" + err);
             return;
         }
-
-        song = data.tracks.items[0];
-        console.log("------Artists-----");
-        console.log('');
-        console.log('Spotify Song Information Results: ');
-        console.log('--------------------------');
-        console.log("Artist(s): " + song.artists[0].name);
-        console.log("Track Title: " + song.name);
-        console.log("Link to Song: " + song.preview_url);
-        console.log("Album Title: " + song.album.name);
-        console.log('--------------------------');
     });
+    log();
 }
 
-//getMediaDetails(song);
-//getMediaDetails(movie);
 
-function getMediaDetails(movie) {
-    if (nodeArgv === "movie-this") {
+function getMedia(nodeArg) {
+  
+    if (!nodeArg) {
+      
+        nodeArg = "Mr. Nobody";    
+        
+        // Then run a request to the OMDB API
+        request("http://www.omdbapi.com/?t=" + nodeArg + "&y=&plot=short&apikey=trilogy", function (error, response, body) {
 
-        if (input.length < 1) {
-
-            input = "Mr. Nobody";
-        };
-
-        // Then run a request to the OMDB API with the movie specified
-        request("http://www.omdbapi.com/?t=" + nodeArgv[3] + "&y=&plot=short&apikey=trilogy", function (error, response, body) {
-
-            // If the request is successful (i.e. if the response status code is 200)
+            // If the request is successful
             if (!error && response.statusCode === 200) {
 
-                // (Note: The syntax below for parsing isn't obvious. Just spend a few moments dissecting it).
-                // console.log(JSON.parse(body));
                 console.log('');
                 console.log('OMDB Movie Information: ');
                 console.log('--------------------------');
@@ -138,52 +144,48 @@ function getMediaDetails(movie) {
                 console.log("Rotten Tomatoes Rating: " + JSON.parse(body).Ratings[1].Value);
                 console.log("Rotten Tomatoes URL: " + JSON.parse(body).tomatoURL);
                 console.log('--------------------------');
-            } else {
-                console.log(error);
             }
         });
-
-    } else {
-
-        function getTextFromRandom() {
-            fs.readFile('random.txt', 'utf8', function (err, data) {
-                if (err) throw err; {
-
-                    var arr = data.split(',');
-
-                    nodeArgv = arr[0].trim();
-                    getMediaDetails(song);
-                }
-
-            });
-
-        }
     }
-   getTextFromRandom();
+    log();
 }
 
 function doit() {
-	fs.readFile('random.txt', "utf8", function(error, data){
+    fs.readFile('random.txt', "utf8", function (error, data) {
 
-		if (error) {
-    		return console.log(error);
-  		}
+        if (error) {
+            console.log(error);
+        }
+        
+        // Then split it by commas (to make it more readable)
+        var dataArr = data.split(" ");
 
-		// Then split it by commas (to make it more readable)
-		var dataArr = data.split(" ");
+        // Each command is represented. Because of the format in the txt file, remove the quotes to run these commands. 
+        if (dataArr[0] === "Spotify A Song") {
+            var songcheck = dataArr[1].slice(1, -1);
+            spotify(songcheck);
+        } else if (dataArr[0] === "List my Recent Tweets") {
+            var tweetname = dataArr[1].slice(1, -1);
+            twitter(tweetname);
+        } else if (dataArr[0] === "Get movie details") {
+            var movie_name = dataArr[1].slice(1, -1);
+            movie(movie_name);
+        }
 
-		// Each command is represented. Because of the format in the txt file, remove the quotes to run these commands. 
-		if (dataArr[0] === "Spotify A Song") {
-			var songcheck = dataArr[1].slice(1, -1);
-			spotify(songcheck);
-		} else if (dataArr[0] === "List my Recent Tweets") {
-			var tweetname = dataArr[1].slice(1, -1);
-			twitter(tweetname);
-		} else if(dataArr[0] === "Get movie details") {
-			var movie_name = dataArr[1].slice(1, -1);
-			movie(movie_name);
-		} 
-		
-  	});
+    });
+    log();
+};
 
+function log() {
+
+    fs.appendFile('./log.txt', nodeArgv + ", ", function(err) {
+
+        // If an error was experienced we say it.
+        if (err) {
+            console.log(err);
+        } else {
+            console.log("Content Added!");
+        }
+
+    });
 };
